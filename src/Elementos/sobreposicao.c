@@ -10,6 +10,7 @@
 #include <math.h>
 #include <string.h>
 
+
 //função auxiliar para calcular distância ao quadrado
 static double distanciaQuadrada(double x1, double y1, double x2, double y2) {
     double dx = x1 - x2;
@@ -303,4 +304,76 @@ double calculaAreaForma(Forma f) {
         default:
             return 0.0;
     }
+}
+
+/*                    FUNÇÃO MESTRE                    */
+
+bool formasSobrepoem(Forma f1, Forma f2) {
+    if (f1 == NULL || f2 == NULL) {
+        return false;
+    }
+    
+    TipoForma tipo1 = getFormaTipo(f1);
+    TipoForma tipo2 = getFormaTipo(f2);
+    
+    void *dados1 = getFormaAssoc(f1);
+    void *dados2 = getFormaAssoc(f2);
+    
+    /* Círculo com outras formas */
+    if (tipo1 == TIPO_CIRCULO && tipo2 == TIPO_CIRCULO) {
+        return sobreposicaoCirculoCirculo(dados1, dados2);
+    }
+    if (tipo1 == TIPO_CIRCULO && tipo2 == TIPO_RETANGULO) {
+        return sobreposicaoCirculoRetangulo(dados1, dados2);
+    }
+    if (tipo1 == TIPO_CIRCULO && tipo2 == TIPO_LINHA) {
+        return sobreposicaoCirculoLinha(dados1, dados2);
+    }
+    if (tipo1 == TIPO_CIRCULO && tipo2 == TIPO_TEXTO) {
+        return sobreposicaoCirculoTexto(dados1, dados2);
+    }
+    
+    /* Retângulo com outras formas */
+    if (tipo1 == TIPO_RETANGULO && tipo2 == TIPO_CIRCULO) {
+        return sobreposicaoCirculoRetangulo(dados2, dados1);
+    }
+    if (tipo1 == TIPO_RETANGULO && tipo2 == TIPO_RETANGULO) {
+        return sobreposicaoRetanguloRetangulo(dados1, dados2);
+    }
+    if (tipo1 == TIPO_RETANGULO && tipo2 == TIPO_LINHA) {
+        return sobreposicaoRetanguloLinha(dados1, dados2);
+    }
+    if (tipo1 == TIPO_RETANGULO && tipo2 == TIPO_TEXTO) {
+        return sobreposicaoRetanguloTexto(dados1, dados2);
+    }
+    
+    /* Linha com outras formas */
+    if (tipo1 == TIPO_LINHA && tipo2 == TIPO_CIRCULO) {
+        return sobreposicaoCirculoLinha(dados2, dados1);
+    }
+    if (tipo1 == TIPO_LINHA && tipo2 == TIPO_RETANGULO) {
+        return sobreposicaoRetanguloLinha(dados2, dados1);
+    }
+    if (tipo1 == TIPO_LINHA && tipo2 == TIPO_LINHA) {
+        return sobreposicaoLinhaLinha(dados1, dados2);
+    }
+    if (tipo1 == TIPO_LINHA && tipo2 == TIPO_TEXTO) {
+        return sobreposicaoLinhaTexto(dados1, dados2);
+    }
+    
+    /* Texto com outras formas */
+    if (tipo1 == TIPO_TEXTO && tipo2 == TIPO_CIRCULO) {
+        return sobreposicaoCirculoTexto(dados2, dados1);
+    }
+    if (tipo1 == TIPO_TEXTO && tipo2 == TIPO_RETANGULO) {
+        return sobreposicaoRetanguloTexto(dados2, dados1);
+    }
+    if (tipo1 == TIPO_TEXTO && tipo2 == TIPO_LINHA) {
+        return sobreposicaoLinhaTexto(dados2, dados1);
+    }
+    if (tipo1 == TIPO_TEXTO && tipo2 == TIPO_TEXTO) {
+        return sobreposicaoTextoTexto(dados1, dados2);
+    }
+    
+    return false;
 }

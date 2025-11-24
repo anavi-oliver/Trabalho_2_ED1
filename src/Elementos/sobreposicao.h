@@ -131,4 +131,29 @@ Pós-condição: retorna a área calculada
 */
 double calculaAreaForma(Forma f);
 
+/*                    FUNÇÃO MESTRE                    */
+/*
+Verifica se duas formas genéricas se sobrepõem no plano.
+Esta função identifica os tipos das formas e chama a função
+especialista apropriada para realizar a verificação.
+
+f1, f2: ponteiros para as formas a serem verificadas
+
+Pré-condição: f1 e f2 devem ser ponteiros válidos
+Pós-condição: retorna true se há sobreposição, false caso contrário
+*/
+bool formasSobrepoem(Forma f1, Forma f2);
+
+/*
+Verifica se uma forma está dentro de um polígono.
+Usa os testes específicos para cada tipo de forma.
+
+f: forma a verificar
+poli: polígono (região de visibilidade)
+
+Pré-condição: f e poli devem ser válidos
+Pós-condição: retorna true se a forma está (parcialmente) dentro
+*/
+bool formaNoPoligono(Forma f, Poligono poli);
+
 #endif
