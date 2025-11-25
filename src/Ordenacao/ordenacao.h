@@ -34,9 +34,7 @@ de acordo com o tipo especificado.
 Pré-condição: base e compar devem ser válidos
 Pós-condição: vetor está ordenado segundo compar
 */
-void ordena(void *base, size_t nmemb, size_t size,
-            int (*compar)(const void *, const void *),
-            TipoOrdenacao tipo, size_t limiarInsertionSort);
+void ordena(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *), TipoOrdenacao tipo, size_t limiarInsertionSort);
 
 /*
 Ordena usando qsort da biblioteca padrão.
@@ -49,8 +47,7 @@ Ordena usando qsort da biblioteca padrão.
 Pré-condição: base e compar devem ser válidos
 Pós-condição: vetor está ordenado
 */
-void ordenaComQsort(void *base, size_t nmemb, size_t size,
-                    int (*compar)(const void *, const void *));
+void ordenaComQsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));
 
 /*
 Ordena usando mergesort híbrido personalizado.
@@ -64,9 +61,7 @@ Ordena usando mergesort híbrido personalizado.
 Pré-condição: base e compar devem ser válidos
 Pós-condição: vetor está ordenado
 */
-void ordenaComMergesort(void *base, size_t nmemb, size_t size,
-                        int (*compar)(const void *, const void *),
-                        size_t limiarInsertionSort);
+void ordenaComMergesort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *), size_t limiarInsertionSort);
 
 /*
 Converte string do parâmetro -to em tipo de ordenação.

@@ -35,9 +35,7 @@ Calcula região de visibilidade e destrói formas que estão
 Pré-condição: formas deve ser válida
 Pós-condição: formas destruídas removidas da lista, relatórios gerados
 */
-void processaBombaDestruicao(double x, double y, Lista formas,
-                             FILE *arquivoTxt, const char *sufixo,
-                             const char *caminhoSaida, const char *nomeBase);
+void processaBombaDestruicao(double x, double y, Lista formas, FILE *arquivoTxt, const char *sufixo, const char *caminhoSaida, const char *nomeBase);
 
 /*                    BOMBA DE PINTURA                    */
 
@@ -57,9 +55,7 @@ Calcula região de visibilidade e pinta formas que estão
 Pré-condição: formas e cor devem ser válidos
 Pós-condição: formas pintadas com nova cor, relatórios gerados
 */
-void processaBombaPintura(double x, double y, const char *cor, Lista formas,
-                         FILE *arquivoTxt, const char *sufixo,
-                         const char *caminhoSaida, const char *nomeBase);
+void processaBombaPintura(double x, double y, const char *cor, Lista formas, FILE *arquivoTxt, const char *sufixo, const char *caminhoSaida, const char *nomeBase);
 
 /*                    BOMBA DE CLONAGEM                    */
 
@@ -81,10 +77,7 @@ por (dx, dy) e recebem IDs únicos.
 Pré-condição: formas e gerador devem ser válidos
 Pós-condição: clones criados e adicionados à lista, relatórios gerados
 */
-void processaBombaClonagem(double x, double y, double dx, double dy,
-                          Lista formas, Gerador gerador, FILE *arquivoTxt,
-                          const char *sufixo, const char *caminhoSaida, 
-                          const char *nomeBase);
+void processaBombaClonagem(double x, double y, double dx, double dy, Lista formas, Gerador gerador, FILE *arquivoTxt, const char *sufixo, const char *caminhoSaida,  const char *nomeBase);
 
 /*                    FUNÇÕES AUXILIARES                    */
 

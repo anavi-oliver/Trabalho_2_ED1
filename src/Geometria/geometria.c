@@ -1,4 +1,6 @@
 #include "geometria.h"
+#define PI 3.14159265358979323846
+
 #include <math.h>
 #include <stdlib.h>
 
@@ -200,8 +202,8 @@ double anguloEntreSegmentos(Segmento s1, Segmento s2) {
     
     double diferenca = angulo2 - angulo1;
     
-    while (diferenca < 0) diferenca += 2 * M_PI;
-    while (diferenca >= 2 * M_PI) diferenca -= 2 * M_PI;
+    while (diferenca < 0) diferenca += 2 * PI;
+    while (diferenca >= 2 * PI) diferenca -= 2 * PI;
     
     return diferenca;
 }

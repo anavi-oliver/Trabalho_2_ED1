@@ -8,14 +8,14 @@
 #include "geometria.h"
 #include "svg.h"
 #include "processaGeo.h"
+#define PI 3.14159265358979323846
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-void processaBombaDestruicao(double x, double y, Lista formas,
-                             FILE *arquivoTxt, const char *sufixo,
-                             const char *caminhoSaida, const char *nomeBase) {
+void processaBombaDestruicao(double x, double y, Lista formas, FILE *arquivoTxt, const char *sufixo, const char *caminhoSaida, const char *nomeBase) {
     if (formas == NULL) {
         return;
     }
@@ -112,10 +112,7 @@ void processaBombaPintura(double x, double y, const char *cor, Lista formas,
     destroiPoligono(regiao);
 }
 
-void processaBombaClonagem(double x, double y, double dx, double dy,
-                          Lista formas, Gerador gerador, FILE *arquivoTxt,
-                          const char *sufixo, const char *caminhoSaida, 
-                          const char *nomeBase) {
+void processaBombaClonagem(double x, double y, double dx, double dy, Lista formas, Gerador gerador, FILE *arquivoTxt, const char *sufixo, const char *caminhoSaida, const char *nomeBase) {
     if (formas == NULL || gerador == NULL) {
         return;
     }
@@ -180,7 +177,7 @@ Poligono calculaRegiaoVisibilidade(double x, double y, Lista formas) {
     int i;
     
     for (i = 0; i < numPontos; i++) {
-        double angulo = (2.0 * M_PI * i) / numPontos;
+        double angulo = (2.0 * PI * i) / numPontos;
         double px = x + raio * cos(angulo);
         double py = y + raio * sin(angulo);
         

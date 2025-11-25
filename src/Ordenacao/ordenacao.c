@@ -3,9 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void ordena(void *base, size_t nmemb, size_t size,
-            int (*compar)(const void *, const void *),
-            TipoOrdenacao tipo, size_t limiarInsertionSort) {
+void ordena(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *),TipoOrdenacao tipo, size_t limiarInsertionSort) {
     
     if (base == NULL || compar == NULL) {
         return;
@@ -26,8 +24,7 @@ void ordena(void *base, size_t nmemb, size_t size,
     }
 }
 
-void ordenaComQsort(void *base, size_t nmemb, size_t size,
-                    int (*compar)(const void *, const void *)) {
+void ordenaComQsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
     if (base == NULL || compar == NULL) {
         return;
     }
@@ -35,9 +32,7 @@ void ordenaComQsort(void *base, size_t nmemb, size_t size,
     qsort(base, nmemb, size, compar);
 }
 
-void ordenaComMergesort(void *base, size_t nmemb, size_t size,
-                        int (*compar)(const void *, const void *),
-                        size_t limiarInsertionSort) {
+void ordenaComMergesort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *), size_t limiarInsertionSort) {
     if (base == NULL || compar == NULL) {
         return;
     }

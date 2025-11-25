@@ -6,6 +6,7 @@
 #include "retangulo.h"
 #include "linha.h"
 #include "texto.h"
+#include "poligono.h"
 
 #include <math.h>
 #include <string.h>

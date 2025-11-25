@@ -10,6 +10,7 @@
 #include "retangulo.h"
 #include "linha.h"
 #include "texto.h"
+#include "poligono.h"
 
 /*
 *        MÓDULO DE SOBREPOSIÇÃO DE FORMAS

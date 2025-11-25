@@ -27,8 +27,7 @@ Complexidade: O(n²) no pior caso, O(n) no melhor caso (vetor já ordenado)
 Pré-condição: base e compar devem ser válidos
 Pós-condição: vetor ordenado em ordem crescente segundo compar
 */
-void insertionSort(void *base, size_t nmemb, size_t size,
-                   int (*compar)(const void *, const void *));
+void insertionSort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));
 
 /*
 Ordena uma região específica de um vetor usando Insertion Sort.
@@ -43,7 +42,6 @@ Ordena uma região específica de um vetor usando Insertion Sort.
 Pré-condição: base e compar válidos, 0 <= inicio <= fim < nmemb
 Pós-condição: região [inicio, fim] está ordenada
 */
-void insertionSortRange(void *base, size_t inicio, size_t fim, 
-                        size_t size, int (*compar)(const void *, const void *));
+void insertionSortRange(void *base, size_t inicio, size_t fim, size_t size, int (*compar)(const void *, const void *));
 
 #endif

@@ -7,8 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void transformaEmAnteparo(Forma forma, char orientacao, 
-                          Gerador gerador, Lista formas) {
+void transformaEmAnteparo(Forma forma, char orientacao, Gerador gerador, Lista formas) {
     if (forma == NULL || gerador == NULL || formas == NULL) {
         return;
     }
