@@ -113,15 +113,15 @@ void desenhaSegmentoSVG(FILE *svg, Segmento s, const char *cor, double espessura
         return;
     }
     
-    Ponto p1 = getPonto1(s);
-    Ponto p2 = getPonto2(s);
+    Ponto p1 = getPonto1Segmento(s);
+    Ponto p2 = getPonto2Segmento(s);
     
-    double x1 = getX(p1);
-    double y1 = getY(p1);
-    double x2 = getX(p2);
-    double y2 = getY(p2);
+    double x1 = getXPonto(p1);
+    double y1 = getYPonto(p1);
+    double x2 = getXPonto(p2);
+    double y2 = getYPonto(p2);
     
-    fprintf(svg, "<line x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\" "
+    fprintf(svg, "\t<line x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\" "
                  "stroke=\"%s\" stroke-width=\"%.2f\" />\n",
             x1, y1, x2, y2, cor, espessura);
 }

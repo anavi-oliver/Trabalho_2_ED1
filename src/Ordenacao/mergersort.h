@@ -1,5 +1,5 @@
-#ifndef MERGESORT_H
-#define MERGESORT_H
+#ifndef MERGERSORT_H
+#define MERGERSORT_H
 
 
 #include <stddef.h>

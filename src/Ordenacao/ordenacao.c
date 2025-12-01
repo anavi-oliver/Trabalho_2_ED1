@@ -1,5 +1,5 @@
 #include "ordenacao.h"
-#include "mergesort.h"
+#include "mergersort.h"
 #include <stdlib.h>
 #include <string.h>
 

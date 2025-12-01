@@ -42,7 +42,7 @@ static char* montaCaminhoCompleto(const char *dir, const char *nomeArquivo) {
         exit(EXIT_FAILURE);
     }
     
-    sprintf(caminhoCompleto, "%s/%s", dir, nomeArquivo);
+    snprintf(caminhoCompleto, len, "%s/%s", dir, nomeArquivo);
     return caminhoCompleto;
 }
 
@@ -98,10 +98,10 @@ static Segmento* processaGeo(const char *caminhoArquivo, int *numSegmentos) {
         if (sscanf(linha, "%d %lf %lf %lf %lf %s", &id, &x1, &y1, &x2, &y2, cor) == 6) {
             Ponto p1 = criaPonto(x1, y1);
             Ponto p2 = criaPonto(x2, y2);
-        segmentos[idx] = criaSegmento(p1, p2);
+            segmentos[idx] = criaSegmento(p1, p2);
             idx++;
-destroiPonto(p1);
-destroiPonto(p2);
+            destroiPonto(p1);
+            destroiPonto(p2);
         }
     }
     
@@ -153,10 +153,10 @@ static void processaQry(const char *caminhoQry, const char *caminhoTxt, const ch
                 
                 // Gera SVG para esta consulta
                 char caminhoSvgConsulta[1024];
-                sprintf(caminhoSvgConsulta, "%s-consulta%d.svg", caminhoSvg, numConsultas);
+                snprintf(caminhoSvgConsulta, sizeof(caminhoSvgConsulta), "%s-consulta%d.svg", caminhoSvg, numConsultas);
                 
-            FILE* svgFile = inicializaSvg(caminhoSvgConsulta, 800, 600);                
-            if (svgFile != NULL) {
+                FILE* svgFile = abreSVG(caminhoSvgConsulta, 800, 600);                
+                if (svgFile != NULL) {
                     // Desenha segmentos (visíveis em verde, ocultos em vermelho)
                     for (int i = 0; i < numSegmentos; i++) {
                         const char* cor = segmentosVisiveis[i] ? "green" : "red";
@@ -166,7 +166,7 @@ static void processaQry(const char *caminhoQry, const char *caminhoTxt, const ch
                     // Desenha ponto de observação
                     desenhaPontoSVG(svgFile, px, py, "blue", 5.0);
                     
-                    fechaSvg(svgFile);
+                    fechaSVG(svgFile);
                 }
                 
                 free(segmentosVisiveis);
@@ -269,15 +269,15 @@ int main(int argc, char *argv[]) {
     getNomeBase(arqGeo, nomeBaseGeo, FILE_NAME_LEN);
     
     char nomeSvgInicial[FILE_NAME_LEN];
-    sprintf(nomeSvgInicial, "%s.svg", nomeBaseGeo);
+    snprintf(nomeSvgInicial, FILE_NAME_LEN, "%s.svg", nomeBaseGeo);
     char *caminhoSvgInicial = montaCaminhoCompleto(dirSaida, nomeSvgInicial);
     
-    FILE* svgInicial = inicializaSVG(caminhoSvgInicial, 800, 600);
+    FILE* svgInicial = abreSVG(caminhoSvgInicial, 800, 600);
     if (svgInicial != NULL) {
         for (int i = 0; i < numSegmentos; i++) {
             desenhaSegmentoSVG(svgInicial, segmentos[i], "black", 1.5);
         }
-        finalizaSVG(svgInicial);
+        fechaSVG(svgInicial);
         printf("SVG inicial gerado: %s\n", caminhoSvgInicial);
     }
     free(caminhoSvgInicial);
@@ -288,14 +288,14 @@ int main(int argc, char *argv[]) {
         getNomeBase(arqQry, nomeBaseQry, FILE_NAME_LEN);
         
         char nomeSaidaBase[FILE_NAME_LEN];
-        sprintf(nomeSaidaBase, "%s-%s", nomeBaseGeo, nomeBaseQry);
+        snprintf(nomeSaidaBase, FILE_NAME_LEN, "%s-%s", nomeBaseGeo, nomeBaseQry);
         
         char nomeTxt[FILE_NAME_LEN];
-        sprintf(nomeTxt, "%s.txt", nomeSaidaBase);
+        snprintf(nomeTxt, FILE_NAME_LEN, "%s.txt", nomeSaidaBase);
         char *caminhoTxt = montaCaminhoCompleto(dirSaida, nomeTxt);
         
         char nomeSvg[FILE_NAME_LEN];
-        sprintf(nomeSvg, "%s", nomeSaidaBase);
+        snprintf(nomeSvg, FILE_NAME_LEN, "%s", nomeSaidaBase);
         char *caminhoSvgBase = montaCaminhoCompleto(dirSaida, nomeSvg);
         
         char *caminhoCompletoQry = montaCaminhoCompleto(dirEntrada, arqQry);

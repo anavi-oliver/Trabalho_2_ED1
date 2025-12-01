@@ -24,4 +24,4 @@ ted: $(OBJECTS)
 clean:
 	find . -name '*.o' -delete
 	rm -f $(PROJ_NAME)
-	@echo "Limpeza concluída."
+	@echo "Limpeza concluida."
