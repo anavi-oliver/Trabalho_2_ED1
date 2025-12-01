@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-// Módulos do projeto
 #include "segmento.h"
 #include "ponto.h"
 #include "visibilidade.h"
@@ -97,8 +96,12 @@ static Segmento* processaGeo(const char *caminhoArquivo, int *numSegmentos) {
         char cor[64];
         
         if (sscanf(linha, "%d %lf %lf %lf %lf %s", &id, &x1, &y1, &x2, &y2, cor) == 6) {
-            segmentos[idx] = criaSegmento(id, x1, y1, x2, y2, cor);
+            Ponto p1 = criaPonto(x1, y1);
+            Ponto p2 = criaPonto(x2, y2);
+        segmentos[idx] = criaSegmento(p1, p2);
             idx++;
+destroiPonto(p1);
+destroiPonto(p2);
         }
     }
     
@@ -108,8 +111,7 @@ static Segmento* processaGeo(const char *caminhoArquivo, int *numSegmentos) {
 }
 
 // Processa arquivo .qry (consultas de visibilidade)
-static void processaQry(const char *caminhoQry, const char *caminhoTxt,
-                       const char *caminhoSvg, Segmento* segmentos, int numSegmentos) {
+static void processaQry(const char *caminhoQry, const char *caminhoTxt, const char *caminhoSvg, Segmento* segmentos, int numSegmentos) {
     FILE *arquivoQry = fopen(caminhoQry, "r");
     if (arquivoQry == NULL) {
         fprintf(stderr, "ERRO: Não foi possível abrir o arquivo .qry: %s\n", caminhoQry);
@@ -153,8 +155,8 @@ static void processaQry(const char *caminhoQry, const char *caminhoTxt,
                 char caminhoSvgConsulta[1024];
                 sprintf(caminhoSvgConsulta, "%s-consulta%d.svg", caminhoSvg, numConsultas);
                 
-                FILE* svgFile = inicializaSVG(caminhoSvgConsulta, 800, 600);
-                if (svgFile != NULL) {
+            FILE* svgFile = inicializaSvg(caminhoSvgConsulta, 800, 600);                
+            if (svgFile != NULL) {
                     // Desenha segmentos (visíveis em verde, ocultos em vermelho)
                     for (int i = 0; i < numSegmentos; i++) {
                         const char* cor = segmentosVisiveis[i] ? "green" : "red";
@@ -164,7 +166,7 @@ static void processaQry(const char *caminhoQry, const char *caminhoTxt,
                     // Desenha ponto de observação
                     desenhaPontoSVG(svgFile, px, py, "blue", 5.0);
                     
-                    finalizaSVG(svgFile);
+                    fechaSvg(svgFile);
                 }
                 
                 free(segmentosVisiveis);

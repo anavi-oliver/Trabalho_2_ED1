@@ -306,4 +306,24 @@ debug e logs do jogo.
 */
 void imprimeTextoTXT(const Texto t, FILE *arquivo);
 
+/*                    FUNÇÕES DE CONVERSÃO                    */
+
+/*
+Converte um texto em uma linha para facilitar cálculos de sobreposição.
+
+O texto é considerado como um segmento com base na sua âncora:
+    - 'i' (início): x1=xt, x2 = xt+comprimento
+    - 'f' (fim): x1 = xt-comprimento, x2=xt
+    - 'm' (meio): x1 =xt-comprimento/2, x2 = xt+comprimento / 2
+    comprimento = 10.0 * número_caracteres
+
+* t: ponteiro para o texto
+* x1, y1, x2, y2: ponteiros para armazenar as coordenadas do segmento
+*
+* Pré-condição: t deve ser válido, ponteiros de coordenadas não nulos
+* Pós-condição: coordenadas do segmento são preenchidas
+*/
+void converterTextoParaLinha(Texto t, double *x1, double *y1, double *x2, double *y2);
+
+
 #endif

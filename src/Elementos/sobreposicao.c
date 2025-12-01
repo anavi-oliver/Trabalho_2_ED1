@@ -186,19 +186,19 @@ bool sobreposicaoLinhaLinha(Linha l1, Linha l2) {
     double x4 = getX2Linha(l2);
     double y4 = getY2Linha(l2);
     
-    int o1 = orientacao(x1, y1, x2, y2, x3, y3);
-    int o2 = orientacao(x1, y1, x2, y2, x4, y4);
-    int o3 = orientacao(x3, y3, x4, y4, x1, y1);
-    int o4 = orientacao(x3, y3, x4, y4, x2, y2);
+    int o1 = orientacaoTresPontos(x1, y1, x2, y2, x3, y3);
+    int o2 = orientacaoTresPontos(x1, y1, x2, y2, x4, y4);
+    int o3 = orientacaoTresPontos(x3, y3, x4, y4, x1, y1);
+    int o4 = orientacaoTresPontos(x3, y3, x4, y4, x2, y2);
     
     //caso geral
     if (o1 != o2 && o3 != o4) return true;
     
     //casos especiais (colineares)
-    if (o1 == 0 && pontoNoSegmento(x1, y1, x3, y3, x2, y2)) return true;
-    if (o2 == 0 && pontoNoSegmento(x1, y1, x4, y4, x2, y2)) return true;
-    if (o3 == 0 && pontoNoSegmento(x3, y3, x1, y1, x4, y4)) return true;
-    if (o4 == 0 && pontoNoSegmento(x3, y3, x2, y2, x4, y4)) return true;
+    if (o1 == 0 && pontoNoSegmentoCoord(x1, y1, x3, y3, x2, y2)) return true;
+    if (o2 == 0 && pontoNoSegmentoCoord(x1, y1, x4, y4, x2, y2)) return true;
+    if (o3 == 0 && pontoNoSegmentoCoord(x3, y3, x1, y1, x4, y4)) return true;
+    if (o4 == 0 && pontoNoSegmentoCoord(x3, y3, x2, y2, x4, y4)) return true;
     
     return false;
 }
@@ -266,13 +266,13 @@ void converterTextoParaLinha(Texto t, double *x1, double *y1, double *x2, double
     }
 }
 
-int orientacao(double px, double py, double qx, double qy, double rx, double ry) {
+int orientacaoTresPontos(double px, double py, double qx, double qy, double rx, double ry) {
     double val = (qy - py) * (rx - qx) - (qx - px) * (ry - qy);
     if (fabs(val) < 1e-10) return 0;  //colinear
     return (val > 0) ? 1 : 2;  //1: horário, 2: anti-horário
 }
 
-bool pontoNoSegmento(double px, double py, double qx, double qy, double rx, double ry) {
+bool pontoNoSegmentoCoord(double px, double py, double qx, double qy, double rx, double ry) {
     return (qx <= fmax(px, rx) && qx >= fmin(px, rx) &&
             qy <= fmax(py, ry) && qy >= fmin(py, ry));
 }

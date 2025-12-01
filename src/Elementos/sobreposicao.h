@@ -105,7 +105,7 @@ rx, ry: coordenadas do ponto r
 
 Retorna: 0 se colineares, 1 se horário, 2 se anti-horário
 */
-int orientacao(double px, double py, double qx, double qy, double rx, double ry);
+int orientacaoTresPontos(double px, double py, double qx, double qy, double rx, double ry);
 
 /*
 Verifica se um ponto q está no segmento de reta pr.
@@ -117,7 +117,7 @@ rx, ry: coordenadas do ponto r (outra extremidade)
 
 Retorna: true se q está no segmento pr, false caso contrário
 */
-bool pontoNoSegmento(double px, double py, double qx, double qy, double rx, double ry);
+bool pontoNoSegmentoCoord(double px, double py, double qx, double qy, double rx, double ry);
 
 /*
 Calcula a área de uma forma genérica.

@@ -108,3 +108,30 @@ void geraSVGCompleto(const char *nomeArquivo, Lista formas, double largura, doub
     
     printf("Arquivo SVG gerado: %s\n", nomeArquivo);
 }
+void desenhaSegmentoSVG(FILE *svg, Segmento s, const char *cor, double espessura) {
+    if (svg == NULL || s == NULL || cor == NULL) {
+        return;
+    }
+    
+    Ponto p1 = getPonto1(s);
+    Ponto p2 = getPonto2(s);
+    
+    double x1 = getX(p1);
+    double y1 = getY(p1);
+    double x2 = getX(p2);
+    double y2 = getY(p2);
+    
+    fprintf(svg, "<line x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\" "
+                 "stroke=\"%s\" stroke-width=\"%.2f\" />\n",
+            x1, y1, x2, y2, cor, espessura);
+}
+
+void desenhaPontoSVG(FILE *svg, double x, double y, const char *cor, double raio) {
+    if (svg == NULL || cor == NULL) {
+        return;
+    }
+    
+    fprintf(svg, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"%.2f\" "
+                 "fill=\"%s\" />\n",
+            x, y, raio, cor);
+}

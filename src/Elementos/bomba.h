@@ -4,6 +4,7 @@
 #include "lista.h"
 #include "poligono.h"
 #include "gerador.h"
+#include "formas.h"
 #include <stdio.h>
 
 /*
@@ -113,16 +114,5 @@ Pós-condição: retorna true se forma está (parcialmente) dentro
 */
 bool formaNoPoligono(Forma forma, Poligono regiao);
 
-/*
-Clona uma forma e a translada.
-
-* forma: forma a clonar
-* dx, dy: deslocamento do clone
-* novoId: ID do clone
-
-Pré-condição: forma deve ser válida
-Pós-condição: retorna nova forma clonada e deslocada
-*/
-Forma clonaForma(Forma forma, double dx, double dy, int novoId);
 
 #endif

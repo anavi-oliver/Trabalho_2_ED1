@@ -367,4 +367,6 @@ void imprimeTextoTXT(const Texto t, FILE *arquivo) {
     }
     
     fprintf(arquivo, "\n");
+
+    
 }

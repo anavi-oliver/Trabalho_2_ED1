@@ -15,7 +15,12 @@
 #include <string.h>
 #include <math.h>
 
+static Forma clonaForma(Forma forma, double dx, double dy, int novoId);
+
 void processaBombaDestruicao(double x, double y, Lista formas, FILE *arquivoTxt, const char *sufixo, const char *caminhoSaida, const char *nomeBase) {
+    (void)caminhoSaida;  // ← ADICIONAR para silenciar warning
+    (void)nomeBase;      // ← ADICIONAR para silenciar warning
+
     if (formas == NULL) {
         return;
     }
@@ -67,9 +72,10 @@ void processaBombaDestruicao(double x, double y, Lista formas, FILE *arquivoTxt,
     destroiPoligono(regiao);
 }
 
-void processaBombaPintura(double x, double y, const char *cor, Lista formas,
-                         FILE *arquivoTxt, const char *sufixo,
-                         const char *caminhoSaida, const char *nomeBase) {
+void processaBombaPintura(double x, double y, const char *cor, Lista formas,FILE *arquivoTxt, const char *sufixo,  const char *caminhoSaida, const char *nomeBase) {
+    (void)caminhoSaida; 
+    (void)nomeBase; 
+    
     if (formas == NULL || cor == NULL) {
         return;
     }
@@ -113,6 +119,9 @@ void processaBombaPintura(double x, double y, const char *cor, Lista formas,
 }
 
 void processaBombaClonagem(double x, double y, double dx, double dy, Lista formas, Gerador gerador, FILE *arquivoTxt, const char *sufixo, const char *caminhoSaida, const char *nomeBase) {
+    (void)caminhoSaida;  
+    (void)nomeBase;
+
     if (formas == NULL || gerador == NULL) {
         return;
     }
@@ -135,6 +144,7 @@ void processaBombaClonagem(double x, double y, double dx, double dy, Lista forma
     }
     
     int numClones = tamanhoLista(formasClonar);
+
     for (i = 0; i < numClones; i++) {
         Forma original = (Forma) getListaPosicao(formasClonar, i);
         if (original != NULL) {
@@ -169,7 +179,69 @@ void processaBombaClonagem(double x, double y, double dx, double dy, Lista forma
     destroiPoligono(regiao);
 }
 
+static Forma clonaForma(Forma forma, double dx, double dy, int novoId) {
+    if (forma == NULL) {
+        return NULL;
+    }
+    
+    TipoForma tipo = getFormaTipo(forma);
+    void *dados = getFormaAssoc(forma);
+    
+    switch (tipo) {
+        case TIPO_CIRCULO: {
+            double x = getXCirculo(dados) + dx;
+            double y = getYCirculo(dados) + dy;
+            double r = getRCirculo(dados);
+            char *corb = getCorbCirculo(dados);
+            char *corp = getCorpCirculo(dados);
+            
+            Circulo c = criarCirculo(novoId, x, y, r, corb, corp, false, 0);
+            return criaForma(novoId, TIPO_CIRCULO, c);
+        }
+        
+        case TIPO_RETANGULO: {
+            double x = getXRetangulo(dados) + dx;
+            double y = getYRetangulo(dados) + dy;
+            double w = getLarguraRetangulo(dados);
+            double h = getAlturaRetangulo(dados);
+            char *corb = getCorbRetangulo(dados);
+            char *corp = getCorpRetangulo(dados);
+            
+            Retangulo r = criarRetangulo(novoId, x, y, w, h, corb, corp, false, 0);
+            return criaForma(novoId, TIPO_RETANGULO, r);
+        }
+        
+        case TIPO_LINHA: {
+            double x1 = getX1Linha(dados) + dx;
+            double y1 = getY1Linha(dados) + dy;
+            double x2 = getX2Linha(dados) + dx;
+            double y2 = getY2Linha(dados) + dy;
+            char *cor = getCorLinha(dados);
+            
+            Linha l = criarLinha(novoId, x1, y1, x2, y2, cor, false, 0);
+            return criaForma(novoId, TIPO_LINHA, l);
+        }
+        
+        case TIPO_TEXTO: {
+            double x = getXTexto(dados) + dx;
+            double y = getYTexto(dados) + dy;
+            char *corb = getCorbTexto(dados);
+            char *corp = getCorpTexto(dados);
+            char ancora = getAncora(dados);
+            char *texto = getTexto(dados);
+            Estilo estilo = getEstiloTexto(dados);
+            
+            Texto t = criarTexto(novoId, x, y, corb, corp, ancora, texto, estilo);
+            return criaForma(novoId, TIPO_TEXTO, t);
+        }
+    }
+    
+    return NULL;
+}
+
+
 Poligono calculaRegiaoVisibilidade(double x, double y, Lista formas) {
+    (void)formas;
     Poligono regiao = criaPoligono();
     
     double raio = 1000.0;
@@ -196,7 +268,6 @@ bool formaNoPoligono(Forma forma, Poligono regiao) {
         return false;
     }
     
-    BoundingBox bbPoli = getBoundingBox(regiao);
     TipoForma tipo = getFormaTipo(forma);
     void *dados = getFormaAssoc(forma);
     
@@ -284,64 +355,4 @@ bool formaNoPoligono(Forma forma, Poligono regiao) {
     }
     
     return false;
-}
-
-Forma clonaForma(Forma forma, double dx, double dy, int novoId) {
-    if (forma == NULL) {
-        return NULL;
-    }
-    
-    TipoForma tipo = getFormaTipo(forma);
-    void *dados = getFormaAssoc(forma);
-    
-    switch (tipo) {
-        case TIPO_CIRCULO: {
-            double x = getXCirculo(dados) + dx;
-            double y = getYCirculo(dados) + dy;
-            double r = getRCirculo(dados);
-            char *corb = getCorbCirculo(dados);
-            char *corp = getCorpCirculo(dados);
-            
-            Circulo c = criarCirculo(novoId, x, y, r, corb, corp, false, 0);
-            return criaForma(novoId, TIPO_CIRCULO, c);
-        }
-        
-        case TIPO_RETANGULO: {
-            double x = getXRetangulo(dados) + dx;
-            double y = getYRetangulo(dados) + dy;
-            double w = getLarguraRetangulo(dados);
-            double h = getAlturaRetangulo(dados);
-            char *corb = getCorbRetangulo(dados);
-            char *corp = getCorpRetangulo(dados);
-            
-            Retangulo r = criarRetangulo(novoId, x, y, w, h, corb, corp, false, 0);
-            return criaForma(novoId, TIPO_RETANGULO, r);
-        }
-        
-        case TIPO_LINHA: {
-            double x1 = getX1Linha(dados) + dx;
-            double y1 = getY1Linha(dados) + dy;
-            double x2 = getX2Linha(dados) + dx;
-            double y2 = getY2Linha(dados) + dy;
-            char *cor = getCorLinha(dados);
-            
-            Linha l = criarLinha(novoId, x1, y1, x2, y2, cor, false, 0);
-            return criaForma(novoId, TIPO_LINHA, l);
-        }
-        
-        case TIPO_TEXTO: {
-            double x = getXTexto(dados) + dx;
-            double y = getYTexto(dados) + dy;
-            char *corb = getCorbTexto(dados);
-            char *corp = getCorpTexto(dados);
-            char ancora = getAncora(dados);
-            char *texto = getTexto(dados);
-            Estilo estilo = getEstiloTexto(dados);
-            
-            Texto t = criarTexto(novoId, x, y, corb, corp, ancora, texto, estilo);
-            return criaForma(novoId, TIPO_TEXTO, t);
-        }
-    }
-    
-    return NULL;
 }

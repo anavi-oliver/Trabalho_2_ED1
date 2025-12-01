@@ -102,7 +102,32 @@ Gera arquivo SVG completo a partir de lista de formas.
 Pré-condição: nomeArquivo e formas devem ser válidos
 Pós-condição: arquivo SVG completo criado
 */
-void geraSVGCompleto(const char *nomeArquivo, Lista formas, 
-                     double largura, double altura);
+void geraSVGCompleto(const char *nomeArquivo, Lista formas, double largura, double altura);
+
+/*
+Desenha um segmento de linha no arquivo SVG.
+
+* svg: ponteiro para o arquivo SVG aberto
+* s: segmento a ser desenhado
+* cor: cor do segmento
+* espessura: largura da linha
+*
+* Pré-condição: svg e s devem ser válidos
+* Pós-condição: segmento é desenhado no SVG
+*/
+void desenhaSegmentoSVG(FILE *svg, Segmento s, const char *cor, double espessura);
+
+/*
+Desenha um ponto (círculo pequeno) no arquivo SVG.
+
+* svg: ponteiro para o arquivo SVG aberto
+* x, y: coordenadas do ponto
+* cor: cor do ponto
+* raio: tamanho do ponto
+*
+* Pré-condição: svg deve ser válido
+* Pós-condição: ponto é desenhado no SVG
+*/
+void desenhaPontoSVG(FILE *svg, double x, double y, const char *cor, double raio);
 
 #endif
