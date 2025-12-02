@@ -90,9 +90,13 @@ double getSWLinha(Linha l) {
 }
 
 bool getDispLinha(Linha l) {
+    if (l == NULL) {
+        return false;
+    }
     linhaC *linha = (linhaC*) l;
     return linha->disp;
 }
+
 
 int getNLinha(Linha l) {
     linhaC *linha = (linhaC*) l;

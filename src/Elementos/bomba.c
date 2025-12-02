@@ -8,6 +8,8 @@
 #include "geometria.h"
 #include "svg.h"
 #include "processaGeo.h"
+#include "visibilidade.h"
+
 #define PI 3.14159265358979323846
 
 #include <stdio.h>
@@ -239,27 +241,127 @@ static Forma clonaForma(Forma forma, double dx, double dy, int novoId) {
     return NULL;
 }
 
-
 Poligono calculaRegiaoVisibilidade(double x, double y, Lista formas) {
-    (void)formas;
     Poligono regiao = criaPoligono();
     
-    double raio = 1000.0;
-    int numPontos = 36;
-    int i;
+    if (formas == NULL) {
+        // Sem anteparos, retorna círculo completo
+        double raio = 1000.0;
+        for (int i = 0; i < 36; i++) {
+            double angulo = (2.0 * PI * i) / 36.0;
+            Ponto p = criaPonto(x + raio * cos(angulo), y + raio * sin(angulo));
+            insertVertice(regiao, p);
+            destroiPonto(p);
+        }
+        fechaPoligono(regiao);
+        return regiao;
+    }
     
-    for (i = 0; i < numPontos; i++) {
-        double angulo = (2.0 * PI * i) / numPontos;
-        double px = x + raio * cos(angulo);
-        double py = y + raio * sin(angulo);
+    // PASSO 1: Filtra apenas anteparos (linhas com disp == true)
+    int numFormas = tamanhoLista(formas);
+    int numAnteparos = 0;
+    
+    // Conta anteparos
+    for (int i = 0; i < numFormas; i++) {
+        Forma f = (Forma) getListaPosicao(formas, i);
+        if (f != NULL && getFormaTipo(f) == TIPO_LINHA) {
+            Linha l = (Linha) getFormaAssoc(f);
+            if (getDispLinha(l)) {
+                numAnteparos++;
+            }
+        }
+    }
+    
+    // Se não há anteparos, retorna círculo completo
+    if (numAnteparos == 0) {
+        double raio = 1000.0;
+        for (int i = 0; i < 36; i++) {
+            double angulo = (2.0 * PI * i) / 36.0;
+            Ponto p = criaPonto(x + raio * cos(angulo), y + raio * sin(angulo));
+            insertVertice(regiao, p);
+            destroiPonto(p);
+        }
+        fechaPoligono(regiao);
+        return regiao;
+    }
+    
+    // PASSO 2: Cria array de segmentos anteparos
+    Segmento* segmentos = (Segmento*)malloc(numAnteparos * sizeof(Segmento));
+    if (segmentos == NULL) {
+        fechaPoligono(regiao);
+        return regiao;
+    }
+    
+    int idx = 0;
+    for (int i = 0; i < numFormas; i++) {
+        Forma f = (Forma) getListaPosicao(formas, i);
+        if (f != NULL && getFormaTipo(f) == TIPO_LINHA) {
+            Linha l = (Linha) getFormaAssoc(f);
+            if (getDispLinha(l)) {
+                double x1 = getX1Linha(l);
+                double y1 = getY1Linha(l);
+                double x2 = getX2Linha(l);
+                double y2 = getY2Linha(l);
+                
+                Ponto p1 = criaPonto(x1, y1);
+                Ponto p2 = criaPonto(x2, y2);
+                segmentos[idx] = criaSegmento(p1, p2);
+                destroiPonto(p1);
+                destroiPonto(p2);
+                idx++;
+            }
+        }
+    }
+    
+    // PASSO 3: Calcula visibilidade usando sweep line
+    bool* segmentosVisiveis = (bool*)malloc(numAnteparos * sizeof(bool));
+    if (segmentosVisiveis == NULL) {
+        for (int i = 0; i < numAnteparos; i++) {
+            destroiSegmento(segmentos[i]);
+        }
+        free(segmentos);
+        fechaPoligono(regiao);
+        return regiao;
+    }
+    
+    calculaVisibilidade(x, y, segmentos, numAnteparos, segmentosVisiveis);
+    
+    // PASSO 4: Constrói polígono de visibilidade a partir dos segmentos visíveis
+    // Cria vértices em 360 graus, lançando raios
+    int numRaios = 360;
+    double raioMax = 1000.0;
+    
+    for (int i = 0; i < numRaios; i++) {
+        double angulo = (2.0 * PI * i) / numRaios;
+        double distMin = raioMax;
+        
+        // Para cada segmento visível, verifica interseção com o raio
+        for (int j = 0; j < numAnteparos; j++) {
+            if (segmentosVisiveis[j]) {
+                double dist = distanciaRaioSegmento(x, y, angulo, segmentos[j]);
+                if (dist < distMin) {
+                    distMin = dist;
+                }
+            }
+        }
+        
+        // Adiciona vértice na distância encontrada
+        double px = x + distMin * cos(angulo);
+        double py = y + distMin * sin(angulo);
         
         Ponto p = criaPonto(px, py);
         insertVertice(regiao, p);
         destroiPonto(p);
     }
     
-    fechaPoligono(regiao);
+    // PASSO 5: Libera memória
+    for (int i = 0; i < numAnteparos; i++) {
+        destroiSegmento(segmentos[i]);
+    }
+    free(segmentos);
+    free(segmentosVisiveis);
     
+    fechaPoligono(regiao);
     return regiao;
 }
 

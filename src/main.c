@@ -3,15 +3,15 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "segmento.h"
-#include "ponto.h"
-#include "visibilidade.h"
+#include "processaGeo.h"
 #include "svg.h"
+#include "lista.h"
+#include "formas.h"
 
 #define PATH_LEN 512
 #define FILE_NAME_LEN 256
 
-/*________________________________ FUNÇÕES AUXILIARES DE CAMINHO ________________________________*/
+/*________________________________ FUNÇÕES AUXILIARES ________________________________*/
 
 static void trataPath(char *path, int tamMax, char* arg) {
     int argLen = strlen(arg);
@@ -21,7 +21,6 @@ static void trataPath(char *path, int tamMax, char* arg) {
         exit(EXIT_FAILURE);
     }
     
-    // Remove barra final se houver
     if (argLen > 0 && arg[argLen - 1] == '/') {
         arg[argLen - 1] = '\0';
         argLen--;
@@ -38,7 +37,7 @@ static char* montaCaminhoCompleto(const char *dir, const char *nomeArquivo) {
     char *caminhoCompleto = (char*)malloc(len);
     
     if (caminhoCompleto == NULL) {
-        fprintf(stderr, "ERRO: Falha ao alocar memória para o caminho completo.\n");
+        fprintf(stderr, "ERRO: Falha ao alocar memória.\n");
         exit(EXIT_FAILURE);
     }
     
@@ -55,157 +54,24 @@ static void getNomeBase(const char *nomeCompleto, char *destino, int tamMax) {
     }
 }
 
-
-/*________________________________ PROCESSAMENTO DE ARQUIVOS ________________________________*/
-
-// Processa arquivo .geo (segmentos)
-static Segmento* processaGeo(const char *caminhoArquivo, int *numSegmentos) {
-    FILE *arquivo = fopen(caminhoArquivo, "r");
-    if (arquivo == NULL) {
-        fprintf(stderr, "ERRO: Não foi possível abrir o arquivo .geo: %s\n", caminhoArquivo);
-        return NULL;
-    }
-    
-    // Primeira passagem: conta segmentos
-    int count = 0;
-    char linha[512];
-    while (fgets(linha, sizeof(linha), arquivo) != NULL) {
-        if (linha[0] != '\n' && linha[0] != '#') {
-            count++;
-        }
-    }
-    
-    // Aloca array de segmentos
-    Segmento* segmentos = (Segmento*)malloc(count * sizeof(Segmento));
-    if (segmentos == NULL) {
-        fclose(arquivo);
-        return NULL;
-    }
-    
-    // Segunda passagem: lê segmentos
-    rewind(arquivo);
-    int idx = 0;
-    
-    while (fgets(linha, sizeof(linha), arquivo) != NULL) {
-        if (linha[0] == '\n' || linha[0] == '#') {
-            continue;
-        }
-        
-        int id;
-        double x1, y1, x2, y2;
-        char cor[64];
-        
-        if (sscanf(linha, "%d %lf %lf %lf %lf %s", &id, &x1, &y1, &x2, &y2, cor) == 6) {
-            Ponto p1 = criaPonto(x1, y1);
-            Ponto p2 = criaPonto(x2, y2);
-            segmentos[idx] = criaSegmento(p1, p2);
-            idx++;
-            destroiPonto(p1);
-            destroiPonto(p2);
-        }
-    }
-    
-    fclose(arquivo);
-    *numSegmentos = idx;
-    return segmentos;
-}
-
-// Processa arquivo .qry (consultas de visibilidade)
-static void processaQry(const char *caminhoQry, const char *caminhoTxt, const char *caminhoSvg, Segmento* segmentos, int numSegmentos) {
-    FILE *arquivoQry = fopen(caminhoQry, "r");
-    if (arquivoQry == NULL) {
-        fprintf(stderr, "ERRO: Não foi possível abrir o arquivo .qry: %s\n", caminhoQry);
-        return;
-    }
-    
-    FILE *arquivoTxt = fopen(caminhoTxt, "w");
-    if (arquivoTxt == NULL) {
-        fprintf(stderr, "ERRO: Não foi possível criar o arquivo .txt: %s\n", caminhoTxt);
-        fclose(arquivoQry);
-        return;
-    }
-    
-    fprintf(arquivoTxt, "========== PROCESSAMENTO DE CONSULTAS ==========\n\n");
-    
-    char linha[512];
-    int numConsultas = 0;
-    
-    // Processa cada consulta
-    while (fgets(linha, sizeof(linha), arquivoQry) != NULL) {
-        if (linha[0] == '\n' || linha[0] == '#') {
-            continue;
-        }
-        
-        numConsultas++;
-        fprintf(arquivoTxt, "[Consulta %d] %s", numConsultas, linha);
-        
-        // Extrai coordenadas do ponto de observação
-        double px, py;
-        if (sscanf(linha, "%lf %lf", &px, &py) == 2) {
-            // Calcula visibilidade
-            bool* segmentosVisiveis = (bool*)malloc(numSegmentos * sizeof(bool));
-            if (segmentosVisiveis != NULL) {
-                calculaVisibilidade(px, py, segmentos, numSegmentos, segmentosVisiveis);
-                
-                // Imprime relatório
-                imprimeRelatorioVisibilidade(arquivoTxt, segmentos, segmentosVisiveis, 
-                                            numSegmentos, px, py);
-                
-                // Gera SVG para esta consulta
-                char caminhoSvgConsulta[1024];
-                snprintf(caminhoSvgConsulta, sizeof(caminhoSvgConsulta), "%s-consulta%d.svg", caminhoSvg, numConsultas);
-                
-                FILE* svgFile = abreSVG(caminhoSvgConsulta, 800, 600);                
-                if (svgFile != NULL) {
-                    // Desenha segmentos (visíveis em verde, ocultos em vermelho)
-                    for (int i = 0; i < numSegmentos; i++) {
-                        const char* cor = segmentosVisiveis[i] ? "green" : "red";
-                        desenhaSegmentoSVG(svgFile, segmentos[i], cor, 2.0);
-                    }
-                    
-                    // Desenha ponto de observação
-                    desenhaPontoSVG(svgFile, px, py, "blue", 5.0);
-                    
-                    fechaSVG(svgFile);
-                }
-                
-                free(segmentosVisiveis);
-            }
-        } else {
-            fprintf(arquivoTxt, "ERRO: Formato de consulta inválido.\n\n");
-        }
-    }
-    
-    fprintf(arquivoTxt, "\n========== RESUMO ==========\n");
-    fprintf(arquivoTxt, "Total de consultas processadas: %d\n", numConsultas);
-    fprintf(arquivoTxt, "Total de segmentos analisados: %d\n", numSegmentos);
-    fprintf(arquivoTxt, "============================\n");
-    
-    fclose(arquivoQry);
-    fclose(arquivoTxt);
-}
-
-
-/*________________________________ FUNÇÃO MAIN ________________________________*/
+/*________________________________ MAIN ________________________________*/
 
 int main(int argc, char *argv[]) {
-    // Variáveis de caminhos
     char dirEntrada[PATH_LEN] = ".";
     char arqGeo[FILE_NAME_LEN] = "";
     char arqQry[FILE_NAME_LEN] = "";
     char dirSaida[PATH_LEN] = "";
     
-    // Flags de parâmetros obrigatórios
     bool f_encontrado = false;
     bool o_encontrado = false;
     
-    // Tratamento dos parâmetros CLI
+    // Parse argumentos
     int i = 1;
     while (i < argc) {
         if (strcmp(argv[i], "-e") == 0) {
             i++;
             if (i >= argc) {
-                fprintf(stderr, "ERRO: O parâmetro -e requer um caminho.\n");
+                fprintf(stderr, "ERRO: -e requer um caminho.\n");
                 return EXIT_FAILURE;
             }
             trataPath(dirEntrada, PATH_LEN, argv[i]);
@@ -213,7 +79,7 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[i], "-f") == 0) {
             i++;
             if (i >= argc) {
-                fprintf(stderr, "ERRO: O parâmetro -f requer um nome de arquivo .geo.\n");
+                fprintf(stderr, "ERRO: -f requer um arquivo .geo.\n");
                 return EXIT_FAILURE;
             }
             strncpy(arqGeo, argv[i], FILE_NAME_LEN - 1);
@@ -223,7 +89,7 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[i], "-q") == 0) {
             i++;
             if (i >= argc) {
-                fprintf(stderr, "ERRO: O parâmetro -q requer um nome de arquivo .qry.\n");
+                fprintf(stderr, "ERRO: -q requer um arquivo .qry.\n");
                 return EXIT_FAILURE;
             }
             strncpy(arqQry, argv[i], FILE_NAME_LEN - 1);
@@ -232,39 +98,32 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[i], "-o") == 0) {
             i++;
             if (i >= argc) {
-                fprintf(stderr, "ERRO: O parâmetro -o requer um caminho de saída.\n");
+                fprintf(stderr, "ERRO: -o requer um caminho.\n");
                 return EXIT_FAILURE;
             }
             trataPath(dirSaida, PATH_LEN, argv[i]);
             o_encontrado = true;
         }
-        else {
-            fprintf(stderr, "AVISO: Parâmetro desconhecido ignorado: %s\n", argv[i]);
-        }
         i++;
     }
     
-    // Validação de parâmetros obrigatórios
     if (!f_encontrado || !o_encontrado) {
-        fprintf(stderr, "ERRO: Os parâmetros -f e -o são obrigatórios.\n");
+        fprintf(stderr, "ERRO: -f e -o são obrigatórios.\n");
         fprintf(stderr, "Uso: %s -f arquivo.geo -o dir_saida [-e dir_entrada] [-q arquivo.qry]\n", argv[0]);
         return EXIT_FAILURE;
     }
     
     // Processa arquivo .geo
     char *caminhoCompletoGeo = montaCaminhoCompleto(dirEntrada, arqGeo);
-    int numSegmentos = 0;
-    Segmento* segmentos = processaGeo(caminhoCompletoGeo, &numSegmentos);
+    Lista formas = processaArquivoGeo(caminhoCompletoGeo);
     free(caminhoCompletoGeo);
     
-    if (segmentos == NULL) {
-        fprintf(stderr, "ERRO: Falha ao processar o arquivo .geo\n");
+    if (formas == NULL) {
+        fprintf(stderr, "ERRO: Falha ao processar .geo\n");
         return EXIT_FAILURE;
     }
     
-    printf("Arquivo .geo processado: %d segmentos carregados.\n", numSegmentos);
-    
-    // Gera SVG inicial (todos os segmentos)
+    // Gera SVG inicial
     char nomeBaseGeo[FILE_NAME_LEN];
     getNomeBase(arqGeo, nomeBaseGeo, FILE_NAME_LEN);
     
@@ -272,49 +131,17 @@ int main(int argc, char *argv[]) {
     snprintf(nomeSvgInicial, FILE_NAME_LEN, "%s.svg", nomeBaseGeo);
     char *caminhoSvgInicial = montaCaminhoCompleto(dirSaida, nomeSvgInicial);
     
-    FILE* svgInicial = abreSVG(caminhoSvgInicial, 800, 600);
-    if (svgInicial != NULL) {
-        for (int i = 0; i < numSegmentos; i++) {
-            desenhaSegmentoSVG(svgInicial, segmentos[i], "black", 1.5);
-        }
-        fechaSVG(svgInicial);
-        printf("SVG inicial gerado: %s\n", caminhoSvgInicial);
-    }
+    geraSVGCompleto(caminhoSvgInicial, formas, 800, 600);
     free(caminhoSvgInicial);
     
-    // Processa arquivo .qry (se fornecido)
+    // TODO: Processar arquivo .qry se fornecido
     if (arqQry[0] != '\0') {
-        char nomeBaseQry[FILE_NAME_LEN];
-        getNomeBase(arqQry, nomeBaseQry, FILE_NAME_LEN);
-        
-        char nomeSaidaBase[FILE_NAME_LEN];
-        snprintf(nomeSaidaBase, FILE_NAME_LEN, "%s-%s", nomeBaseGeo, nomeBaseQry);
-        
-        char nomeTxt[FILE_NAME_LEN];
-        snprintf(nomeTxt, FILE_NAME_LEN, "%s.txt", nomeSaidaBase);
-        char *caminhoTxt = montaCaminhoCompleto(dirSaida, nomeTxt);
-        
-        char nomeSvg[FILE_NAME_LEN];
-        snprintf(nomeSvg, FILE_NAME_LEN, "%s", nomeSaidaBase);
-        char *caminhoSvgBase = montaCaminhoCompleto(dirSaida, nomeSvg);
-        
-        char *caminhoCompletoQry = montaCaminhoCompleto(dirEntrada, arqQry);
-        
-        processaQry(caminhoCompletoQry, caminhoTxt, caminhoSvgBase, segmentos, numSegmentos);
-        
-        printf("Consultas processadas. Resultados em: %s\n", caminhoTxt);
-        
-        free(caminhoCompletoQry);
-        free(caminhoTxt);
-        free(caminhoSvgBase);
+        printf("AVISO: Processamento de .qry ainda não implementado.\n");
     }
     
     // Libera memória
-    for (int i = 0; i < numSegmentos; i++) {
-        destroiSegmento(segmentos[i]);
-    }
-    free(segmentos);
+    destroiListaCompleta(formas, (void (*)(void*))destroiForma);
     
-    printf("Processamento concluído com sucesso.\n");
+    printf("Processamento concluído.\n");
     return EXIT_SUCCESS;
 }
