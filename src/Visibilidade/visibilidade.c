@@ -37,10 +37,12 @@ double distanciaRaioSegmento(double px, double py, double angulo, Segmento segme
     double dy_raio = sin(angulo);
     
     // Coordenadas do segmento
-    double x1 = getX1Segmento(segmento);
-    double y1 = getY1Segmento(segmento);
-    double x2 = getX2Segmento(segmento);
-    double y2 = getY2Segmento(segmento);
+Ponto p1 = getPonto1Segmento(segmento);
+Ponto p2 = getPonto2Segmento(segmento);
+double x1 = getXPonto(p1);
+double y1 = getYPonto(p1);
+double x2 = getXPonto(p2);
+double y2 = getYPonto(p2);
     
     // Vetor do segmento
     double dx_seg = x2 - x1;
@@ -75,10 +77,12 @@ bool segmentoEhVisivel(double px, double py, Segmento segmento,
     }
     
     // Calcula ângulo do ponto médio do segmento
-    double x1 = getX1Segmento(segmento);
-    double y1 = getY1Segmento(segmento);
-    double x2 = getX2Segmento(segmento);
-    double y2 = getY2Segmento(segmento);
+Ponto p1 = getPonto1Segmento(segmento);
+Ponto p2 = getPonto2Segmento(segmento);
+double x1 = getXPonto(p1);
+double y1 = getYPonto(p1);
+double x2 = getXPonto(p2);
+double y2 = getYPonto(p2);
     
     double xm = (x1 + x2) / 2.0;
     double ym = (y1 + y2) / 2.0;
@@ -131,10 +135,13 @@ void calculaVisibilidade(double px, double py,
     
     // Calcula ângulos e cria vértices
     for (int i = 0; i < n; i++) {
-        double x1 = getX1Segmento(segmentos[i]);
-        double y1 = getY1Segmento(segmentos[i]);
-        double x2 = getX2Segmento(segmentos[i]);
-        double y2 = getY2Segmento(segmentos[i]);
+        Ponto p1 = getPonto1Segmento(segmentos[i]);
+        Ponto p2 = getPonto2Segmento(segmentos[i]);
+        
+        double x1 = getXPonto(p1);
+        double y1 = getYPonto(p1);
+        double x2 = getXPonto(p2);
+        double y2 = getYPonto(p2);
         
         double angulo1 = calculaAnguloPolar(px, py, x1, y1);
         double angulo2 = calculaAnguloPolar(px, py, x2, y2);
@@ -150,7 +157,7 @@ void calculaVisibilidade(double px, double py,
     }
     
     // PASSO 2: Ordena vértices por ângulo
-    ordenaVerticesPorAngulo(vertices, numVertices);
+ordena(vertices, numVertices, sizeof(Vertice), comparaVerticesPorAngulo, TIPO_QSORT, 0);
     
     // PASSO 3: Cria árvore de segmentos ativos
     SegmentosAtivos ativos = criaSegmentosAtivos(px, py);
@@ -282,20 +289,23 @@ void imprimeRelatorioVisibilidade(FILE* arquivo,
     fprintf(arquivo, "\n--- Segmentos Visíveis ---\n");
     for (int i = 0; i < n; i++) {
         if (segmentosVisiveis[i]) {
-            fprintf(arquivo, "  Segmento %d: (%.2f, %.2f) -> (%.2f, %.2f)\n",
-                    getIdSegmento(segmentos[i]),
-                    getX1Segmento(segmentos[i]), getY1Segmento(segmentos[i]),
-                    getX2Segmento(segmentos[i]), getY2Segmento(segmentos[i]));
+Ponto p1 = getPonto1Segmento(segmentos[i]);
+Ponto p2 = getPonto2Segmento(segmentos[i]);
+fprintf(arquivo, "  Segmento %d: (%.2f, %.2f) -> (%.2f, %.2f)\n", i,
+        getXPonto(p1), getYPonto(p1),
+        getXPonto(p2), getYPonto(p2));
         }
     }
     
     fprintf(arquivo, "\n--- Segmentos Ocultos ---\n");
     for (int i = 0; i < n; i++) {
         if (!segmentosVisiveis[i]) {
-            fprintf(arquivo, "  Segmento %d: (%.2f, %.2f) -> (%.2f, %.2f)\n",
-                    getIdSegmento(segmentos[i]),
-                    getX1Segmento(segmentos[i]), getY1Segmento(segmentos[i]),
-                    getX2Segmento(segmentos[i]), getY2Segmento(segmentos[i]));
+Ponto p1 = getPonto1Segmento(segmentos[i]);
+Ponto p2 = getPonto2Segmento(segmentos[i]);
+fprintf(arquivo, "  Segmento %d: (%.2f, %.2f) -> (%.2f, %.2f)\n",
+        i,
+        getXPonto(p1), getYPonto(p1),
+        getXPonto(p2), getYPonto(p2));
         }
     }
     
