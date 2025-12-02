@@ -4,9 +4,11 @@
 #include <stdbool.h>
 
 #include "processaGeo.h"
+#include "processaQry.h"
 #include "svg.h"
 #include "lista.h"
 #include "formas.h"
+#include "gerador.h"
 
 #define PATH_LEN 512
 #define FILE_NAME_LEN 256
@@ -134,9 +136,25 @@ int main(int argc, char *argv[]) {
     geraSVGCompleto(caminhoSvgInicial, formas, 800, 600);
     free(caminhoSvgInicial);
     
-    // TODO: Processar arquivo .qry se fornecido
+   // Processa arquivo .qry se fornecido
     if (arqQry[0] != '\0') {
-        printf("AVISO: Processamento de .qry ainda não implementado.\n");
+        // Inicializa gerador de IDs
+        int maiorId = calculaMaiorId(formas);
+        Gerador gerador = criaGerador(maiorId + 1);
+        
+        // Monta nome base para arquivos de saída
+        char nomeBaseQry[FILE_NAME_LEN];
+        getNomeBase(arqQry, nomeBaseQry, FILE_NAME_LEN);
+        
+        char nomeBaseSaida[FILE_NAME_LEN * 2];
+        snprintf(nomeBaseSaida, sizeof(nomeBaseSaida), "%s-%s", nomeBaseGeo, nomeBaseQry);
+        
+        // Processa .qry
+        char *caminhoCompletoQry = montaCaminhoCompleto(dirEntrada, arqQry);
+        processaArquivoQry(caminhoCompletoQry, formas, gerador, dirSaida, nomeBaseSaida);
+        free(caminhoCompletoQry);
+        
+        destroiGerador(gerador);
     }
     
     // Libera memória
