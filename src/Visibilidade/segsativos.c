@@ -1,5 +1,6 @@
 #include "segsativos.h"
 #include "segmento.h"
+#include "ponto.h"  
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -34,10 +35,12 @@ static double calculaDistanciaRaioSegmento(double px, double py, void* segmento,
     double dy_raio = sin(angulo);
     
     // Coordenadas do segmento
-    double x1 = getX1Segmento(segmento);
-    double y1 = getY1Segmento(segmento);
-    double x2 = getX2Segmento(segmento);
-    double y2 = getY2Segmento(segmento);
+Ponto p1 = getPonto1Segmento(segmento);
+Ponto p2 = getPonto2Segmento(segmento);
+double x1 = getXPonto(p1);
+double y1 = getYPonto(p1);
+double x2 = getXPonto(p2);
+double y2 = getYPonto(p2);
     
     // Vetor do segmento
     double dx_seg = x2 - x1;
@@ -246,6 +249,7 @@ bool removeSegmentoAtivo(SegmentosAtivos sa, void* segmento) {
 }
 
 void* getSegmentoMaisProximo(const SegmentosAtivos sa, double anguloVarredura) {
+     (void)anguloVarredura; 
     if (sa == NULL) {
         return NULL;
     }
