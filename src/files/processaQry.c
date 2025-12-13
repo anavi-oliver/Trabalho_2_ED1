@@ -9,8 +9,9 @@
 #include "formas.h"       
 #include "lista.h"        
 #include "gerador.h"
+#include "svg.h"          // Necessário para escreveFormasSVG e outras funcoes de desenho
 
-// Includes das formas
+// Includes das formas específicas para pegar coordenadas
 #include "linha.h"
 #include "retangulo.h"
 #include "circulo.h"
@@ -70,6 +71,7 @@ bool formaNoPoligonoVis(Forma f, Lista regiao) {
             double w = getLarguraRetangulo(dados);  
             double h = getAlturaRetangulo(dados);   
             
+            // Testa os 4 cantos
             if (pontoInternoVis(rx, ry, regiao)) return true;
             if (pontoInternoVis(rx+w, ry, regiao)) return true;
             if (pontoInternoVis(rx+w, ry+h, regiao)) return true;
@@ -86,14 +88,13 @@ bool formaNoPoligonoVis(Forma f, Lista regiao) {
         case TIPO_TEXTO: {
             double x = getXTexto(dados);  
             double y = getYTexto(dados); 
-
             return pontoInternoVis(x, y, regiao);
         }
+        default: return false;
     }
-    return false;
 }
 
-// --- FUNÇÃO DE CLONAGEM ---
+// --- CLONAGEM ---
 
 Forma clonaForma(Forma forma, double dx, double dy, int novoId) {
     if (forma == NULL) return NULL;
@@ -122,14 +123,11 @@ Forma clonaForma(Forma forma, double dx, double dy, int novoId) {
             double y2 = getY2Linha(dados) + dy;
             return criaForma(novoId, TIPO_LINHA, criarLinha(novoId, x1, y1, x2, y2, "black", false, 0));
         }
-        case TIPO_TEXTO: {
-            return NULL; // Clonagem de texto simplificada
-        }
+        default: return NULL;
     }
-    return NULL;
 }
 
-// --- APLICAÇÃO DOS EFEITOS ---
+// --- EFEITOS ---
 
 void aplicarDestruicao(Lista formas, Lista poligonoVis) {
     int qtd = tamanhoLista(formas);
@@ -181,6 +179,39 @@ void montaCaminhoFile(char* buffer, const char* dir, const char* nome) {
         sprintf(buffer, "%s/%s", dir, nome);
 }
 
+// --- CALCULO DE TAMANHO DO SVG ---
+
+void obterDimensoesMaximas(Lista formas, double *wMax, double *hMax) {
+    *wMax = 1000.0; // Valor minimo padrao
+    *hMax = 1000.0;
+    
+    int qtd = tamanhoLista(formas);
+    for(int i=0; i<qtd; i++) {
+        Forma f = getListaPosicao(formas, i);
+        TipoForma t = getFormaTipo(f);
+        void* d = getFormaAssoc(f);
+        double maxx = 0, maxy = 0;
+        
+        if(t == TIPO_RETANGULO) {
+            maxx = getXRetangulo(d) + getLarguraRetangulo(d);
+            maxy = getYRetangulo(d) + getAlturaRetangulo(d);
+        } else if (t == TIPO_CIRCULO) {
+            maxx = getXCirculo(d) + getRCirculo(d);
+            maxy = getYCirculo(d) + getRCirculo(d);
+        } else if (t == TIPO_LINHA) {
+            maxx = (getX1Linha(d) > getX2Linha(d)) ? getX1Linha(d) : getX2Linha(d);
+            maxy = (getY1Linha(d) > getY2Linha(d)) ? getY1Linha(d) : getY2Linha(d);
+        }
+        
+        if(maxx > *wMax) *wMax = maxx;
+        if(maxy > *hMax) *hMax = maxy;
+    }
+    
+    // Margem de segurança
+    *wMax += 50.0;
+    *hMax += 50.0;
+}
+
 // --- FUNÇÃO PRINCIPAL ---
 
 void processaArquivoQry(const char* entrada, Lista formas, Gerador gerador, const char* dirSaida, const char* nomeBase, char tipoSort, int threshold) {
@@ -190,8 +221,11 @@ void processaArquivoQry(const char* entrada, Lista formas, Gerador gerador, cons
         return;
     }
 
+    // Calcula dimensoes para o SVG
+    double maxW, maxH;
+    obterDimensoesMaximas(formas, &maxW, &maxH);
+
     char linha[512];
-    int contadorQry = 0;
 
     while (fgets(linha, sizeof(linha), qry)) {
         char comando[10];
@@ -205,14 +239,27 @@ void processaArquivoQry(const char* entrada, Lista formas, Gerador gerador, cons
             
             Lista poli = calcular_visibilidade(bx, by, formas, tipoSort, threshold);
             
-            char nomeArq[256], pathSvg[512];
+            char nomeArq[1024], pathSvg[1024];
             sprintf(nomeArq, "%s-d-%s.svg", nomeBase, (strlen(sufixo)>0)?sufixo:"idx");
             montaCaminhoFile(pathSvg, dirSaida, nomeArq);
+            
             FILE* svg = fopen(pathSvg, "w");
             if(svg) {
-                fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\">\n");
+                // Cabecalho e fundo
+                fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%.2f\" height=\"%.2f\">\n", maxW, maxH);
+                // Borda transparente (fill=none)
+                fprintf(svg, "\t<rect x=\"0\" y=\"0\" width=\"%.2f\" height=\"%.2f\" fill=\"none\" stroke=\"black\" stroke-width=\"1\" />\n", maxW, maxH);
+                
+                // 1. DESENHA O CENÁRIO (AS FORMAS ANTES)
+                escreveFormasSVG(svg, formas);
+                
+                // 2. DESENHA A VISIBILIDADE (COM OPACIDADE PARA VER O QUE TEM ATRAS, SE QUISER)
+                // "red" para destruicao
                 desenhar_poligono_visibilidade(svg, poli, "red");
-                fprintf(svg, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"5\" fill=\"black\"/>\n", bx, by);
+                
+                // 3. DESENHA O PONTO DE TIRO
+                fprintf(svg, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"5\" fill=\"red\" stroke=\"black\" stroke-width=\"1\"/>\n", bx, by);
+                
                 fprintf(svg, "</svg>");
                 fclose(svg);
             }
@@ -229,14 +276,20 @@ void processaArquivoQry(const char* entrada, Lista formas, Gerador gerador, cons
             
             Lista poli = calcular_visibilidade(bx, by, formas, tipoSort, threshold);
             
-            char nomeArq[256], pathSvg[512];
+            char nomeArq[1024], pathSvg[1024];
             sprintf(nomeArq, "%s-p-%s.svg", nomeBase, (strlen(sufixo)>0)?sufixo:"idx");
             montaCaminhoFile(pathSvg, dirSaida, nomeArq);
+            
             FILE* svg = fopen(pathSvg, "w");
             if(svg) {
-                fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\">\n");
+                fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%.2f\" height=\"%.2f\">\n", maxW, maxH);
+                fprintf(svg, "\t<rect x=\"0\" y=\"0\" width=\"%.2f\" height=\"%.2f\" fill=\"none\" stroke=\"black\" stroke-width=\"1\" />\n", maxW, maxH);
+                
+                escreveFormasSVG(svg, formas); // Cenário
+                
                 desenhar_poligono_visibilidade(svg, poli, cor);
-                fprintf(svg, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"5\" fill=\"%s\"/>\n", bx, by, cor);
+                fprintf(svg, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"5\" fill=\"%s\" stroke=\"black\"/>\n", bx, by, cor);
+                
                 fprintf(svg, "</svg>");
                 fclose(svg);
             }
@@ -253,14 +306,20 @@ void processaArquivoQry(const char* entrada, Lista formas, Gerador gerador, cons
             
             Lista poli = calcular_visibilidade(bx, by, formas, tipoSort, threshold);
             
-            char nomeArq[256], pathSvg[512];
+            char nomeArq[1024], pathSvg[1024];
             sprintf(nomeArq, "%s-cln-%s.svg", nomeBase, (strlen(sufixo)>0)?sufixo:"idx");
             montaCaminhoFile(pathSvg, dirSaida, nomeArq);
+            
             FILE* svg = fopen(pathSvg, "w");
             if(svg) {
-                fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\">\n");
-                desenhar_poligono_visibilidade(svg, poli, "blue");
-                fprintf(svg, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"5\" fill=\"blue\"/>\n", bx, by);
+                fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%.2f\" height=\"%.2f\">\n", maxW, maxH);
+                fprintf(svg, "\t<rect x=\"0\" y=\"0\" width=\"%.2f\" height=\"%.2f\" fill=\"none\" stroke=\"black\" stroke-width=\"1\" />\n", maxW, maxH);
+                
+                escreveFormasSVG(svg, formas); // Cenário
+                
+                desenhar_poligono_visibilidade(svg, poli, "blue"); // Clone usa azul
+                fprintf(svg, "<circle cx=\"%.2f\" cy=\"%.2f\" r=\"5\" fill=\"blue\" stroke=\"black\"/>\n", bx, by);
+                
                 fprintf(svg, "</svg>");
                 fclose(svg);
             }
@@ -278,7 +337,6 @@ void processaArquivoQry(const char* entrada, Lista formas, Gerador gerador, cons
              if (lidos >= 1) {
                 char ori = (strlen(orientacao) > 0) ? orientacao[0] : 'i';
                 
-                // Busca forma pelo ID (Assumindo que getFormaId existe em formas.h)
                 int qtd = tamanhoLista(formas);
                 for(int i=0; i<qtd; i++) {
                     Forma f = (Forma)getListaPosicao(formas, i);

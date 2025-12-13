@@ -12,7 +12,6 @@ typedef struct boundingbox {
 } BoundingBoxStruct;
 
 BoundingBox criaBoundingBox(double xMin, double yMin, double xMax, double yMax) {
-    // REMOVIDO a validação para permitir bbox vazia
     BoundingBoxStruct *bb = (BoundingBoxStruct*) malloc(sizeof(BoundingBoxStruct));
     if (bb == NULL) {
         fprintf(stderr, "Erro: falha na alocação de memória para bounding box.\n");

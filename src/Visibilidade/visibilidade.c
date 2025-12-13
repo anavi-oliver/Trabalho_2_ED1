@@ -98,36 +98,39 @@ void add_seg(SegmentoVar** arr, int* cap, int* count, double x1, double y1, doub
     (*arr)[*count].y2 = y2;
     (*count)++;
 }
-
 int extrair_segmentos(double bx, double by, Lista formas, SegmentoVar** array_segs) {
     int capacidade = 100;
     int count = 0;
     *array_segs = malloc(capacidade * sizeof(SegmentoVar));
-    (void)bx; (void)by; // silencia warnings se nao usar
+    (void)bx; (void)by; 
 
-    // Itera pela lista de formas usando indices e getters
+    if (!formas) return 0; // Proteção contra lista nula
+
     int qtd = tamanhoLista(formas);
     for (int i = 0; i < qtd; i++) {
         Forma f = (Forma) getListaPosicao(formas, i);
-        if (f) {
-            TipoForma tipo = getFormaTipo(f);
-            void* obj = getFormaAssoc(f);
+        
+        // --- PROTEÇÃO EXTRA ---
+        if (!f) continue; 
+        void* obj = getFormaAssoc(f);
+        if (!obj) continue; // Se a forma não tem dados associados, pula
+        // ----------------------
 
-            if (tipo == TIPO_LINHA) {
-                add_seg(array_segs, &capacidade, &count, getX1Linha(obj), getY1Linha(obj), getX2Linha(obj), getY2Linha(obj));
-            }
-            else if (tipo == TIPO_RETANGULO) {
-                double x = getXRetangulo(obj);
-                double y = getYRetangulo(obj);
-                double w = getLarguraRetangulo(obj);
-                double h = getAlturaRetangulo(obj);
-                
-                add_seg(array_segs, &capacidade, &count, x, y, x+w, y);     
-                add_seg(array_segs, &capacidade, &count, x+w, y, x+w, y+h); 
-                add_seg(array_segs, &capacidade, &count, x+w, y+h, x, y+h); 
-                add_seg(array_segs, &capacidade, &count, x, y+h, x, y);     
-            }
-            // Circulos podem ser aproximados por segmentos se desejar, mas regra geral ignora ou faz bbox
+        TipoForma tipo = getFormaTipo(f);
+
+        if (tipo == TIPO_LINHA) {
+            add_seg(array_segs, &capacidade, &count, getX1Linha(obj), getY1Linha(obj), getX2Linha(obj), getY2Linha(obj));
+        }
+        else if (tipo == TIPO_RETANGULO) {
+            double x = getXRetangulo(obj);
+            double y = getYRetangulo(obj);
+            double w = getLarguraRetangulo(obj);
+            double h = getAlturaRetangulo(obj);
+            
+            add_seg(array_segs, &capacidade, &count, x, y, x+w, y);     
+            add_seg(array_segs, &capacidade, &count, x+w, y, x+w, y+h); 
+            add_seg(array_segs, &capacidade, &count, x+w, y+h, x, y+h); 
+            add_seg(array_segs, &capacidade, &count, x, y+h, x, y);     
         }
     }
     return count;

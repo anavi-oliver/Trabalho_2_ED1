@@ -75,7 +75,7 @@ char* criar_nome_saida(const char* dir_saida, const char* nome_base, const char*
     
     // Tratamento da barra do diretório
     char ultimoChar = (strlen(dir_saida) > 0) ? dir_saida[strlen(dir_saida)-1] : '\0';
-    char sep = (ultimoChar == '/' || ultimoChar == '\\') ? "" : "/";
+    char *sep = (ultimoChar == '/' || ultimoChar == '\\') ? "" : "/";
 
     if (sufixo && strlen(sufixo) > 0) {
         // Se tiver sufixo (ex: consulta qry)
