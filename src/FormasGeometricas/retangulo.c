@@ -77,7 +77,6 @@ void destroiRetangulo(Retangulo r) {
     free(ret);
 }
 
-//get =   retanguloR *ret = (retanguloR*) r, pega o tipo opaco e faz o cast pra struct, convertendo o Retangulo pra retanguloR* e dps retorna campo desejado(ex: x,y, w...)
 
 double getXRetangulo(Retangulo r) {
     retanguloR *ret = (retanguloR*) r;

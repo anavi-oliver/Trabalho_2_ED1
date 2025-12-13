@@ -1,313 +1,218 @@
 #include "visibilidade.h"
-#include "vertice.h"
-#include "segsativos.h"
-#include "ordenacao.h"
-#include "segmento.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "sort.h"
+#include "formas.h"
+#include "lista.h"
+#include "linha.h"
+#include "retangulo.h" 
+#include "circulo.h" 
+
 #include <math.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-/*________________________________ FUNÇÕES AUXILIARES ________________________________*/
+#ifndef HUGE_VAL
+#define HUGE_VAL 1e50
+#endif
 
-double calculaAnguloPolar(double px, double py, double x, double y) {
-    double dx = x - px;
-    double dy = y - py;
-    
-    double angulo = atan2(dy, dx);
-    
-    // Normaliza para [0, 2π)
-    if (angulo < 0) {
-        angulo += 2.0 * M_PI;
-    }
-    
-    return angulo;
+// --- DEFINIÇÃO DA STRUCT OPACA ---
+typedef struct stPontoVis {
+    double x;
+    double y;
+} StPontoVis;
+
+// --- IMPLEMENTAÇÃO DOS GETTERS ---
+double getPontoVisX(PontoVis p) {
+    return ((StPontoVis*)p)->x;
 }
 
-double distanciaRaioSegmento(double px, double py, double angulo, Segmento segmento) {
-    if (segmento == NULL) {
-        return INFINITY;
-    }
-    
-    // Direção do raio
-    double dx_raio = cos(angulo);
-    double dy_raio = sin(angulo);
-    
-    // Coordenadas do segmento
-Ponto p1 = getPonto1Segmento(segmento);
-Ponto p2 = getPonto2Segmento(segmento);
-double x1 = getXPonto(p1);
-double y1 = getYPonto(p1);
-double x2 = getXPonto(p2);
-double y2 = getYPonto(p2);
-    
-    // Vetor do segmento
-    double dx_seg = x2 - x1;
-    double dy_seg = y2 - y1;
-    
-    // Vetor do ponto ao início do segmento
-    double dx_p1 = x1 - px;
-    double dy_p1 = y1 - py;
-    
-    // Calcula interseção usando determinantes
-    double det = dx_raio * dy_seg - dy_raio * dx_seg;
-    
-    if (fabs(det) < 1e-10) {
-        return INFINITY;  // Paralelos
-    }
-    
-    double t = (dx_p1 * dy_seg - dy_p1 * dx_seg) / det;
-    double u = (dx_p1 * dy_raio - dy_p1 * dx_raio) / det;
-    
-    // Verifica se interseção está no raio (t >= 0) e no segmento (0 <= u <= 1)
-    if (t >= 0 && u >= 0 && u <= 1) {
-        return t;
-    }
-    
-    return INFINITY;
+double getPontoVisY(PontoVis p) {
+    return ((StPontoVis*)p)->y;
 }
 
-bool segmentoEhVisivel(double px, double py, Segmento segmento,
-                      Segmento* segmentosBloqueadores, int n) {
-    if (segmento == NULL) {
-        return false;
-    }
-    
-    // Calcula ângulo do ponto médio do segmento
-Ponto p1 = getPonto1Segmento(segmento);
-Ponto p2 = getPonto2Segmento(segmento);
-double x1 = getXPonto(p1);
-double y1 = getYPonto(p1);
-double x2 = getXPonto(p2);
-double y2 = getYPonto(p2);
-    
-    double xm = (x1 + x2) / 2.0;
-    double ym = (y1 + y2) / 2.0;
-    
-    double angulo = calculaAnguloPolar(px, py, xm, ym);
-    double distSegmento = distanciaRaioSegmento(px, py, angulo, segmento);
-    
-    if (distSegmento == INFINITY) {
-        return false;  // Segmento não intersecta raio
-    }
-    
-    // Verifica se algum outro segmento está mais próximo
-    for (int i = 0; i < n; i++) {
-        if (segmentosBloqueadores[i] == segmento) {
-            continue;  // Ignora o próprio segmento
-        }
-        
-        double distBloqueador = distanciaRaioSegmento(px, py, angulo, segmentosBloqueadores[i]);
-        
-        if (distBloqueador < distSegmento - 1e-9) {
-            return false;  // Bloqueado por outro segmento
-        }
-    }
-    
-    return true;
-}
+// --- ESTRUTURAS AUXILIARES INTERNAS ---
+typedef struct {
+    double x1, y1;
+    double x2, y2;
+} SegmentoVar;
 
-
-/*________________________________ ALGORITMO PRINCIPAL ________________________________*/
-
-void calculaVisibilidade(double px, double py, 
-                        Segmento* segmentos, int n,
-                        bool* segmentosVisiveis) {
-    if (segmentos == NULL || segmentosVisiveis == NULL || n <= 0) {
-        return;
-    }
-    
-    // Inicializa array de visibilidade
-    for (int i = 0; i < n; i++) {
-        segmentosVisiveis[i] = false;
-    }
-    
-    // PASSO 1: Cria array de vértices (2 por segmento: INICIO e FIM)
-    int numVertices = n * 2;
-    Vertice* vertices = (Vertice*)malloc(numVertices * sizeof(Vertice));
-    if (vertices == NULL) {
-        fprintf(stderr, "ERRO: Falha ao alocar memória para vértices.\n");
-        return;
-    }
-    
-    // Calcula ângulos e cria vértices
-    for (int i = 0; i < n; i++) {
-        Ponto p1 = getPonto1Segmento(segmentos[i]);
-        Ponto p2 = getPonto2Segmento(segmentos[i]);
-        
-        double x1 = getXPonto(p1);
-        double y1 = getYPonto(p1);
-        double x2 = getXPonto(p2);
-        double y2 = getYPonto(p2);
-        
-        double angulo1 = calculaAnguloPolar(px, py, x1, y1);
-        double angulo2 = calculaAnguloPolar(px, py, x2, y2);
-        
-        // Vértice de INICIO (menor ângulo)
-        if (angulo1 <= angulo2) {
-            vertices[2*i] = criaVertice(x1, y1, TIPO_INICIO, angulo1, segmentos[i]);
-            vertices[2*i + 1] = criaVertice(x2, y2, TIPO_FIM, angulo2, segmentos[i]);
-        } else {
-            vertices[2*i] = criaVertice(x2, y2, TIPO_INICIO, angulo2, segmentos[i]);
-            vertices[2*i + 1] = criaVertice(x1, y1, TIPO_FIM, angulo1, segmentos[i]);
-        }
-    }
-    
-    // PASSO 2: Ordena vértices por ângulo
-ordena(vertices, numVertices, sizeof(Vertice), comparaVerticesPorAngulo, TIPO_QSORT, 0);
-    
-    // PASSO 3: Cria árvore de segmentos ativos
-    SegmentosAtivos ativos = criaSegmentosAtivos(px, py);
-    if (ativos == NULL) {
-        for (int i = 0; i < numVertices; i++) {
-            destroiVertice(vertices[i]);
-        }
-        free(vertices);
-        return;
-    }
-    
-    // PASSO 4: Varredura angular
-    for (int i = 0; i < numVertices; i++) {
-        Vertice v = vertices[i];
-        double angulo = getVerticeAngulo(v);
-        TipoVertice tipo = getVerticeTipo(v);
-        Segmento segAtual = (Segmento)getVerticeSegmento(v);
-        
-        if (tipo == TIPO_INICIO) {
-            // Insere segmento na árvore
-            insereSegmentoAtivo(ativos, segAtual, angulo);
-            
-            // Verifica se este segmento ficou visível
-            Segmento segMaisProximo = (Segmento)getSegmentoMaisProximo(ativos, angulo);
-            
-            if (segMaisProximo == segAtual) {
-                // Este segmento é o mais próximo, logo é visível
-                for (int j = 0; j < n; j++) {
-                    if (segmentos[j] == segAtual) {
-                        segmentosVisiveis[j] = true;
-                        break;
-                    }
-                }
-            }
-        } else {  // TIPO_FIM
-            // Remove segmento da árvore
-            removeSegmentoAtivo(ativos, segAtual);
-        }
-    }
-    
-    // Libera memória
-    destroiSegmentosAtivos(ativos);
-    for (int i = 0; i < numVertices; i++) {
-        destroiVertice(vertices[i]);
-    }
-    free(vertices);
-}
-
-
-/*________________________________ ESTRUTURAS DE DADOS ________________________________*/
+#define EV_INICIO 0
+#define EV_FIM 1
 
 typedef struct {
-    double px;
-    double py;
-    int numVerticesVisiveis;
-    double* angulosVisiveis;
-    double* distanciasVisiveis;
-} PoligonoVisibilidadeInterno;
+    double angulo;
+    int tipo; 
+    double x, y; 
+    SegmentoVar* seg; 
+} Evento;
 
-PoligonoVisibilidade criaPoligonoVisibilidade(double px, double py) {
-    PoligonoVisibilidadeInterno* pv = (PoligonoVisibilidadeInterno*)malloc(sizeof(PoligonoVisibilidadeInterno));
-    if (pv == NULL) {
-        return NULL;
-    }
-    
-    pv->px = px;
-    pv->py = py;
-    pv->numVerticesVisiveis = 0;
-    pv->angulosVisiveis = NULL;
-    pv->distanciasVisiveis = NULL;
-    
-    return (PoligonoVisibilidade)pv;
+// --- GEOMETRIA BÁSICA ---
+
+double calcular_angulo(double cy, double cx, double py, double px) {
+    return atan2(py - cy, px - cx);
 }
 
-void destroiPoligonoVisibilidade(PoligonoVisibilidade pv) {
-    if (pv == NULL) {
-        return;
-    }
+double interseccao_raio_seg(double ox, double oy, double angulo, SegmentoVar* seg) {
+    double dx = cos(angulo);
+    double dy = sin(angulo);
     
-    PoligonoVisibilidadeInterno* poligono = (PoligonoVisibilidadeInterno*)pv;
+    double x3 = seg->x1; double y3 = seg->y1;
+    double x4 = seg->x2; double y4 = seg->y2;
     
-    if (poligono->angulosVisiveis != NULL) {
-        free(poligono->angulosVisiveis);
-    }
-    if (poligono->distanciasVisiveis != NULL) {
-        free(poligono->distanciasVisiveis);
-    }
+    double denom = (x3 - x4)*dy - (y3 - y4)*dx;
+    if (fabs(denom) < 1e-9) return HUGE_VAL; 
     
-    free(poligono);
+    double t = ((x3 - ox)*(y3 - y4) - (y3 - oy)*(x3 - x4)) / denom;
+    double u = ((x3 - ox)*dy - (y3 - oy)*dx) / denom;
+    
+    if (t > 1e-6 && u >= 0.0 && u <= 1.0) {
+        return t;
+    }
+    return HUGE_VAL;
 }
 
+int comparar_eventos(const void* a, const void* b) {
+    Evento* e1 = *(Evento**)a;
+    Evento* e2 = *(Evento**)b;
 
-/*________________________________ ANÁLISE E RELATÓRIOS ________________________________*/
+    if (e1->angulo < e2->angulo) return -1;
+    if (e1->angulo > e2->angulo) return 1;
 
-int contaSegmentosVisiveis(const bool* segmentosVisiveis, int n) {
-    if (segmentosVisiveis == NULL || n <= 0) {
-        return 0;
+    if (e1->tipo == EV_INICIO && e2->tipo == EV_FIM) return -1;
+    if (e1->tipo == EV_FIM && e2->tipo == EV_INICIO) return 1;
+
+    return 0;
+}
+
+void add_seg(SegmentoVar** arr, int* cap, int* count, double x1, double y1, double x2, double y2) {
+    if (*count >= *cap) {
+        *cap *= 2;
+        *arr = realloc(*arr, (*cap) * sizeof(SegmentoVar));
     }
-    
+    (*arr)[*count].x1 = x1;
+    (*arr)[*count].y1 = y1;
+    (*arr)[*count].x2 = x2;
+    (*arr)[*count].y2 = y2;
+    (*count)++;
+}
+
+int extrair_segmentos(double bx, double by, Lista formas, SegmentoVar** array_segs) {
+    int capacidade = 100;
     int count = 0;
-    for (int i = 0; i < n; i++) {
-        if (segmentosVisiveis[i]) {
-            count++;
+    *array_segs = malloc(capacidade * sizeof(SegmentoVar));
+    (void)bx; (void)by; // silencia warnings se nao usar
+
+    // Itera pela lista de formas usando indices e getters
+    int qtd = tamanhoLista(formas);
+    for (int i = 0; i < qtd; i++) {
+        Forma f = (Forma) getListaPosicao(formas, i);
+        if (f) {
+            TipoForma tipo = getFormaTipo(f);
+            void* obj = getFormaAssoc(f);
+
+            if (tipo == TIPO_LINHA) {
+                add_seg(array_segs, &capacidade, &count, getX1Linha(obj), getY1Linha(obj), getX2Linha(obj), getY2Linha(obj));
+            }
+            else if (tipo == TIPO_RETANGULO) {
+                double x = getXRetangulo(obj);
+                double y = getYRetangulo(obj);
+                double w = getLarguraRetangulo(obj);
+                double h = getAlturaRetangulo(obj);
+                
+                add_seg(array_segs, &capacidade, &count, x, y, x+w, y);     
+                add_seg(array_segs, &capacidade, &count, x+w, y, x+w, y+h); 
+                add_seg(array_segs, &capacidade, &count, x+w, y+h, x, y+h); 
+                add_seg(array_segs, &capacidade, &count, x, y+h, x, y);     
+            }
+            // Circulos podem ser aproximados por segmentos se desejar, mas regra geral ignora ou faz bbox
         }
     }
-    
     return count;
 }
 
-void imprimeRelatorioVisibilidade(FILE* arquivo,
-                                 Segmento* segmentos,
-                                 bool* segmentosVisiveis,
-                                 int n,
-                                 double px, double py) {
-    if (arquivo == NULL || segmentos == NULL || segmentosVisiveis == NULL || n <= 0) {
-        return;
+Lista calcular_visibilidade(double bx, double by, Lista formas, char tipo_sort, int threshold) {
+    SegmentoVar* segs = NULL;
+    int qtd_segs = extrair_segmentos(bx, by, formas, &segs);
+
+    if (qtd_segs == 0) {
+        free(segs);
+        return NULL; // Ou retorna lista vazia
     }
+
+    int qtd_ev = qtd_segs * 2;
+    Evento** eventos = malloc(qtd_ev * sizeof(Evento*));
     
-    fprintf(arquivo, "\n========== RELATÓRIO DE VISIBILIDADE ==========\n");
-    fprintf(arquivo, "Ponto de observação: (%.2f, %.2f)\n", px, py);
-    fprintf(arquivo, "Número total de segmentos: %d\n", n);
+    for (int i = 0; i < qtd_segs; i++) {
+        double ang1 = calcular_angulo(by, bx, segs[i].y1, segs[i].x1);
+        double ang2 = calcular_angulo(by, bx, segs[i].y2, segs[i].x2);
+        
+        eventos[2*i] = malloc(sizeof(Evento));
+        eventos[2*i]->angulo = ang1;
+        eventos[2*i]->x = segs[i].x1;
+        eventos[2*i]->y = segs[i].y1;
+        eventos[2*i]->tipo = EV_INICIO; 
+        eventos[2*i]->seg = &segs[i];
+
+        eventos[2*i+1] = malloc(sizeof(Evento));
+        eventos[2*i+1]->angulo = ang2;
+        eventos[2*i+1]->x = segs[i].x2;
+        eventos[2*i+1]->y = segs[i].y2;
+        eventos[2*i+1]->tipo = EV_FIM;
+        eventos[2*i+1]->seg = &segs[i];
+    }
+
+    if (tipo_sort == 'm') {
+        merge_sort((void**)eventos, 0, qtd_ev - 1, threshold, comparar_eventos);
+    } else {
+        qsort(eventos, qtd_ev, sizeof(Evento*), (int (*)(const void*, const void*))comparar_eventos);
+    }
+
+    Lista poligono = criaLista(); 
     
-    int numVisiveis = contaSegmentosVisiveis(segmentosVisiveis, n);
-    fprintf(arquivo, "Segmentos visíveis: %d\n", numVisiveis);
-    fprintf(arquivo, "Segmentos ocultos: %d\n", n - numVisiveis);
-    fprintf(arquivo, "Percentual de visibilidade: %.1f%%\n", 
-            (numVisiveis * 100.0) / n);
-    
-    fprintf(arquivo, "\n--- Segmentos Visíveis ---\n");
-    for (int i = 0; i < n; i++) {
-        if (segmentosVisiveis[i]) {
-Ponto p1 = getPonto1Segmento(segmentos[i]);
-Ponto p2 = getPonto2Segmento(segmentos[i]);
-fprintf(arquivo, "  Segmento %d: (%.2f, %.2f) -> (%.2f, %.2f)\n", i,
-        getXPonto(p1), getYPonto(p1),
-        getXPonto(p2), getYPonto(p2));
+    for (int i = 0; i < qtd_ev; i++) {
+        double ang = eventos[i]->angulo;
+        double menorT = HUGE_VAL;
+        
+        for (int k = 0; k < qtd_segs; k++) {
+            double t = interseccao_raio_seg(bx, by, ang, &segs[k]);
+            if (t < menorT) menorT = t;
         }
-    }
-    
-    fprintf(arquivo, "\n--- Segmentos Ocultos ---\n");
-    for (int i = 0; i < n; i++) {
-        if (!segmentosVisiveis[i]) {
-Ponto p1 = getPonto1Segmento(segmentos[i]);
-Ponto p2 = getPonto2Segmento(segmentos[i]);
-fprintf(arquivo, "  Segmento %d: (%.2f, %.2f) -> (%.2f, %.2f)\n",
-        i,
-        getXPonto(p1), getYPonto(p1),
-        getXPonto(p2), getYPonto(p2));
+        
+        if (menorT < HUGE_VAL) {
+            // ALOCA A STRUCT INTERNA
+            StPontoVis* p = malloc(sizeof(StPontoVis));
+            p->x = bx + menorT * cos(ang);
+            p->y = by + menorT * sin(ang);
+            
+            // Insere na lista (cast implicito para void*)
+            insereListaFim(poligono, p);
         }
+        free(eventos[i]);
     }
     
-    fprintf(arquivo, "===============================================\n\n");
+    free(eventos);
+    free(segs);
+    return poligono;
+}
+
+void desenhar_poligono_visibilidade(FILE* svg, Lista poligono, char* cor) {
+    if (!poligono || !svg) return;
+    
+    fprintf(svg, "\n<polygon points=\"");
+    
+    int qtd = tamanhoLista(poligono);
+    for(int i=0; i<qtd; i++) {
+        PontoVis p = getListaPosicao(poligono, i);
+        // USA OS GETTERS
+        fprintf(svg, "%.2f,%.2f ", getPontoVisX(p), getPontoVisY(p));
+    }
+    
+    fprintf(svg, "\" fill=\"%s\" opacity=\"0.5\" stroke=\"none\" />\n", cor);
+}
+
+void destruir_lista_pontos(Lista poligono) {
+    destroiListaCompleta(poligono, free);
 }
